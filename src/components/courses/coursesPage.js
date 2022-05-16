@@ -1,30 +1,49 @@
-import React, { Fragment } from "react";
+import React from "react";
 import { connect } from "react-redux";
-import * as courseActions from "../../redux/actions/courseAction";
-import * as authorActions from "../../redux/actions/authorAction";
+import * as courseAction from "../../redux/actions/courseAction";
+import * as authorAction from "../../redux/actions/authorAction";
 import PropTypes from "prop-types";
 import { bindActionCreators } from "redux";
 import CourseList from "./courseList";
+import { Redirect } from "react-router-dom";
 
 class CoursesPage extends React.Component {
+  state = {
+    redirectToAddCoursePage: false,
+  };
+
   componentDidMount() {
-    if (this.props.courses.length === 0) {
-      this.props.actions.loadCourses().catch((error) => {
-        alert("something went wrong" + error);
+    const { courses, authors, actions } = this.props;
+
+    if (courses.length === 0) {
+      actions.loadCourses().catch((error) => {
+        alert("Loading courses failed" + error);
       });
     }
-    if (this.props.authors.length === 0) {
-      this.props.actions.loadAuthors().catch((error) => {
-        alert("something went wrong" + error);
+
+    if (authors.length === 0) {
+      actions.loadAuthors().catch((error) => {
+        alert("Loading authors failed" + error);
       });
     }
   }
+
   render() {
     return (
-      <Fragment>
+      <>
+        {this.state.redirectToAddCoursePage && <Redirect to="/course" />}
         <h2>Courses</h2>
+
+        <button
+          style={{ marginBottom: 20 }}
+          className="btn btn-primary add-course"
+          onClick={() => this.setState({ redirectToAddCoursePage: true })}
+        >
+          Add Course
+        </button>
+
         <CourseList courses={this.props.courses} />
-      </Fragment>
+      </>
     );
   }
 }
@@ -54,8 +73,8 @@ function mapStateToProps(state) {
 function mapDispatchToProps(dispatch) {
   return {
     actions: {
-      loadCourses: bindActionCreators(courseActions.loadCourses, dispatch),
-      loadAuthors: bindActionCreators(authorActions.loadAuthors, dispatch),
+      loadCourses: bindActionCreators(courseAction.loadCourses, dispatch),
+      loadAuthors: bindActionCreators(authorAction.loadAuthors, dispatch),
     },
   };
 }
