@@ -5,6 +5,8 @@ import { loadAuthors } from "../../redux/actions/authorAction";
 import PropTypes, { func } from "prop-types";
 import CourseForm from "./courseForm";
 import { newCourse } from "../../../tools/mockData";
+import Spinner from "../common/Spinner";
+import { toast } from "react-toastify";
 
 function ManageCoursePage({
   courses,
@@ -17,15 +19,15 @@ function ManageCoursePage({
 }) {
   const [course, setCourse] = useState({ ...props.course });
   const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (courses.length === 0) {
       loadCourses().catch((error) => {
         alert("something went wrong" + error);
       });
-    }
-    else{
-      setCourse({...props.course})
+    } else {
+      setCourse({ ...props.course });
     }
     if (authors.length === 0) {
       loadAuthors().catch((error) => {
@@ -33,6 +35,19 @@ function ManageCoursePage({
       });
     }
   }, [props.course]);
+
+  function formIsValid() {
+    const { title, authorId, category } = course;
+    const errors = {};
+
+    if (!title) errors.title = "Title is required.";
+    if (!authorId) errors.author = "Author is required";
+    if (!category) errors.category = "Category is required";
+
+    setErrors(errors);
+    // Form is valid if the errors object still has no properties
+    return Object.keys(errors).length === 0;
+  }
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -44,18 +59,32 @@ function ManageCoursePage({
 
   function handleSave(event) {
     event.preventDefault();
-    saveCourse(course).then(() => {
-      history.push("/courses");
-    });
+    if (!formIsValid())
+    {
+      return;
+    }
+    setSaving(true);
+    saveCourse(course)
+      .then(() => {
+        toast.success("Course Saved...");
+        history.push("/courses");
+      })
+      .catch((error) => {
+        setSaving(false);
+        setErrors({ onSave: error.message });
+      });
   }
 
-  return (
+  return authors.length === 0 || courses.length === 0 ? (
+    <Spinner />
+  ) : (
     <CourseForm
       course={course}
       errors={errors}
       authors={authors}
       onChange={handleChange}
       onSave={handleSave}
+      saving={saving}
     />
   );
 }
@@ -78,7 +107,7 @@ function mapStateToProps(state, ownProps) {
   const slug = ownProps.match.params.slug;
   const course =
     slug && state.courses.length > 0
-       ? getCourseBySlug(state.courses, slug)
+      ? getCourseBySlug(state.courses, slug)
       : newCourse;
   return {
     course,
